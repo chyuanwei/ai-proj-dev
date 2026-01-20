@@ -1,5 +1,14 @@
-function doGet() {
-  // GitHub 上 index.html 的原始文件 URL
+function doGet(e) {
+  // 检查 URL 参数，如果指定 source=local 则直接使用 GAS 本地文件
+  // 例如：https://script.google.com/macros/s/.../exec?source=local
+  const useLocal = e && e.parameter && e.parameter.source === 'local';
+  
+  if (useLocal) {
+    // 直接使用 GAS 本地的 index.html
+    return HtmlService.createHtmlOutputFromFile('index');
+  }
+  
+  // 默认行为：优先从 GitHub 获取，失败时使用本地作为备用
   const githubRawUrl = 'https://github.com/chyuanwei/ai-proj-dev/raw/dev/src/index.html';
   
   try {
