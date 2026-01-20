@@ -4,7 +4,7 @@ function doGet(e) {
   const useLocal = e && e.parameter && e.parameter.source === 'local';
   
   if (useLocal) {
-    // 直接使用 GAS 本地的 index.html
+    // 直接使用 GAS 本地的 index.html（由 index.gas.html 推送而来）
     return HtmlService.createHtmlOutputFromFile('index');
   }
   
