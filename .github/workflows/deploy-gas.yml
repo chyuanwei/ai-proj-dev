@@ -17,13 +17,15 @@ jobs:
         with:
           node-version: '20' # 或者你项目使用的 Node.js 版本
 
-      - name: Install clasp
-        run: npm install -g @google/clasp
+      - name: Install clasp and jq
+        run: |
+          npm install -g @google/clasp
+          sudo apt-get update && sudo apt-get install -y jq # 安装 jq
 
       - name: Configure clasp credentials
         run: |
-          # 将 CLASPRC_JSON Secret 的内容直接写入 ~/.clasprc.json
-          echo "${{ secrets.CLASPRC_JSON }}" > ~/.clasprc.json
+          # 使用 jq 命令将 Secret 的内容安全地写入 ~/.clasprc.json
+          echo "${{ secrets.CLASPRC_JSON }}" | jq . > ~/.clasprc.json
           chmod 600 ~/.clasprc.json # 确保权限正确
           echo "--- Debug: ~/.clasprc.json content ---"
           cat ~/.clasprc.json
