@@ -1,0 +1,34 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches: [ dev ]
+  workflow_dispatch:
+
+jobs:
+  deploy-gas:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install clasp
+      run: npm install -g @google/clasp
+
+    - name: Create clasp credentials
+      run: |
+        echo '${{ secrets.GAS_CREDENTIALS }}' > ~/.clasprc.json
+      env:
+        GAS_CREDENTIALS: ${{ secrets.GAS_CREDENTIALS }}
+
+    - name: Deploy to GAS
+      run: clasp push --force
+
+    - name: Log deployment status
+      run: echo "✅ GAS deployment completed"
