@@ -22,9 +22,14 @@ jobs:
 
       - name: Configure clasp credentials
         run: |
-          echo '${{ secrets.CLASPRC_JSON }}' | base64 -d > ~/.clasprc.json
+          # 将 CLASPRC_JSON Secret 的内容直接写入 ~/.clasprc.json
+          echo "${{ secrets.CLASPRC_JSON }}" > ~/.clasprc.json
           chmod 600 ~/.clasprc.json # 确保权限正确
-          cat ~/.clasprc.json # for debugging, remove in production
+          echo "--- Debug: ~/.clasprc.json content ---"
+          cat ~/.clasprc.json
+          echo "--- End Debug ---"
+          echo "CLASP_CREDENTIALS=~/.clasprc.json" >> $GITHUB_ENV # 设置环境变量
+          ls -la ~ # 检查家目录文件列表和权限
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
 
