@@ -1,0 +1,74 @@
+name: Deploy Google Apps Script to GAS
+
+on:
+  push:
+    branches:
+      - dev # 当推送到 dev 分支时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # 或者你项目使用的 Node.js 版本
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Configure clasp credentials
+        run: |
+          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+          cat ~/.clasprc.json # for debugging, remove in production
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+
+      - name: Prepare index.html for GAS deployment
+        run: |
+          # 备份 GitHub 版本的 index.html（如果存在）
+          if [ -f src/index.html ]; then
+            mv src/index.html src/index.html.backup
+            echo "Backed up src/index.html"
+          fi
+          # 将 GAS 版本的 index.gas.html 复制为 index.html
+          cp src/index.gas.html src/index.html
+          echo "Copied src/index.gas.html to src/index.html"
+        working-directory: ${{ github.workspace }}
+
+      - name: Temporarily remove index.html from .claspignore
+        run: |
+          sed -i '/src\/index.html/s/^/#/' .claspignore
+          echo "Temporarily commented out src/index.html in .claspignore"
+        working-directory: ${{ github.workspace }}
+
+      - name: Push code to Google Apps Script
+        run: npx @google/clasp push --force
+        working-directory: ${{ github.workspace }}
+
+      - name: Deploy to Google Apps Script Web App
+        run: |
+          # 替换为你的 Web App 部署 ID
+          DEPLOYMENT_ID="${{ vars.GAS_WEBAPP_DEPLOYMENT_ID }}"
+          TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
+          npx @google/clasp deploy -i $DEPLOYMENT_ID -d "GitHub Actions Auto-Deploy - $TIMESTAMP"
+        env:
+          # 在 GitHub 仓库设置中创建这个变量
+          GAS_WEBAPP_DEPLOYMENT_ID: ${{ vars.GAS_WEBAPP_DEPLOYMENT_ID }}
+        working-directory: ${{ github.workspace }}
+
+      - name: Restore original .claspignore and index.html
+        if: always() # 确保即使部署失败也执行恢复步骤
+        run: |
+          # 恢复 .claspignore
+          sed -i '/src\/index.html/s/^#//' .claspignore
+          echo "Restored .claspignore"
+          # 恢复 GitHub 版本的 index.html
+          if [ -f src/index.html.backup ]; then
+            mv src/index.html.backup src/index.html
+            echo "Restored src/index.html from backup"
+          fi
+        working-directory: ${{ github.workspace }}

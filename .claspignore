@@ -1,4 +1,4 @@
-# 忽略 GitHub 版本的 HTML 文件，只推送 GAS 版本的 .gas.html 文件
+# 忽略 GitHub ?�本??HTML ?�件，只?��?GAS ?�本??.gas.html ?�件
 src/index.html
 src/order.html
 src/confirm.html
