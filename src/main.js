@@ -4,14 +4,9 @@ const SHEET_NAME = 'sheet1';
 
 function doGet(e) {
   const action = e.parameter.action;
-  const useLocal = e && e.parameter && e.parameter.source === 'local';
 
   // 處理訂購頁面
   if (action === 'order') {
-    if (useLocal) {
-      return HtmlService.createHtmlOutputFromFile('order');
-    }
-
     const githubRawUrl = 'https://github.com/chyuanwei/ai-proj-dev/raw/dev/src/order.html';
 
     try {
@@ -19,22 +14,14 @@ function doGet(e) {
       const htmlContent = response.getContentText('UTF-8');
       return HtmlService.createHtmlOutput(htmlContent);
     } catch (error) {
-      try {
-        return HtmlService.createHtmlOutputFromFile('order');
-      } catch (fallbackError) {
-        return HtmlService.createHtmlOutput(
-          '<h1>錯誤</h1><p>無法載入訂購頁面：' + error.toString() + '</p>'
-        );
-      }
+      return HtmlService.createHtmlOutput(
+        '<h1>錯誤</h1><p>無法從 GitHub 載入訂購頁面：' + error.toString() + '</p>'
+      );
     }
   }
 
   // 處理確認頁面
   if (action === 'confirm') {
-    if (useLocal) {
-      return HtmlService.createHtmlOutputFromFile('confirm');
-    }
-
     const githubRawUrl = 'https://github.com/chyuanwei/ai-proj-dev/raw/dev/src/confirm.html';
 
     try {
@@ -42,13 +29,9 @@ function doGet(e) {
       const htmlContent = response.getContentText('UTF-8');
       return HtmlService.createHtmlOutput(htmlContent);
     } catch (error) {
-      try {
-        return HtmlService.createHtmlOutputFromFile('confirm');
-      } catch (fallbackError) {
-        return HtmlService.createHtmlOutput(
-          '<h1>錯誤</h1><p>無法載入確認頁面：' + error.toString() + '</p>'
-        );
-      }
+      return HtmlService.createHtmlOutput(
+        '<h1>錯誤</h1><p>無法從 GitHub 載入確認頁面：' + error.toString() + '</p>'
+      );
     }
   }
 
@@ -79,11 +62,7 @@ function doGet(e) {
     }
   }
 
-  // 預設頁面
-  if (useLocal) {
-    return HtmlService.createHtmlOutputFromFile('index');
-  }
-
+  // 預設頁面 (從 GitHub 加載 index.html)
   const githubRawUrl = 'https://github.com/chyuanwei/ai-proj-dev/raw/dev/src/index.html';
 
   try {
@@ -91,13 +70,9 @@ function doGet(e) {
     const htmlContent = response.getContentText('UTF-8');
     return HtmlService.createHtmlOutput(htmlContent);
   } catch (error) {
-    try {
-      return HtmlService.createHtmlOutputFromFile('index');
-    } catch (fallbackError) {
-      return HtmlService.createHtmlOutput(
-        '<h1>錯誤</h1><p>無法載入 HTML 檔案：' + error.toString() + '</p>'
-      );
-    }
+    return HtmlService.createHtmlOutput(
+      '<h1>錯誤</h1><p>無法從 GitHub 載入預設頁面：' + error.toString() + '</p>'
+    );
   }
 }
 
