@@ -1,2 +1,4 @@
-# 忽略 GitHub 版本的 index.html，只推送 GAS 版本的 index.gas.html
+# 忽略 GitHub 版本的 HTML 文件，只推送 GAS 版本的 .gas.html 文件
 src/index.html
+src/order.html
+src/confirm.html
