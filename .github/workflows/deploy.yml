@@ -1,4 +1,4 @@
-name: Deploy to GAS
+name: Deploy to Google Apps Script
 
 on:
   push:
@@ -24,15 +24,12 @@ jobs:
 
       - name: Create clasprc.json
         env:
-          # 使用環境變數傳遞，絕對不要在 run 裡面用 ${{ }}
           CLASPRC_JSON_RAW: ${{ secrets.CLASPRC_JSON }}
         run: |
-          # 建立家目錄並寫入檔案
-          mkdir -p ~/.clasprc.json
-          echo "$CLASPRC_JSON_RAW" > ~/.clasprc.json
-          chmod 600 ~/.clasprc.json
+          # 直接將內容寫入家目錄下的檔案，不建立任何目錄
+          printf "%s" "$CLASPRC_JSON_RAW" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
 
-      - name: Deploy to GAS
+      - name: Push code to GAS
         run: |
-          # 強制覆蓋 push 到 GAS 平台
           clasp push -f
