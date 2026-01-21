@@ -124,7 +124,7 @@
             }
 
             // 從 Google Apps Script 獲取訂購資訊
-            fetch(window.location.href.replace('confirm.html', '').replace(/\/$/, '') + '?action=getOrder&id=' + encodeURIComponent(orderId))
+            fetch('https://script.google.com/macros/s/AKfycbyqciyj4XAglp1K1b_wCrYTxhKBn7mAKkzbcW_A_a-y/dev?action=getOrder&id=' + encodeURIComponent(orderId))
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.order) {

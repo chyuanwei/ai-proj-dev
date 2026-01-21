@@ -289,7 +289,7 @@
                     }
 
                     // 發送 POST 請求到 Google Apps Script
-                    fetch(window.location.href.replace('?source=local', '').replace(/\/$/, '') + '?action=submitOrder', {
+                    fetch('https://script.google.com/macros/s/AKfycbyqciyj4XAglp1K1b_wCrYTxhKBn7mAKkzbcW_A_a-y/dev?action=submitOrder', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
