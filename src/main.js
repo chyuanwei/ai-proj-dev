@@ -1,33 +1,248 @@
+// Google Sheet ID
+const SHEET_ID = '13CMolEbu5D9yC_69G-90QPw9BU_zAj96xpbmipcH-TY';
+const SHEET_NAME = 'sheet1';
+
 function doGet(e) {
-  // 检查 URL 参数，如果指定 source=local 则直接使用 GAS 本地文件
-  // 例如：https://script.google.com/macros/s/.../exec?source=local
+  const action = e.parameter.action;
   const useLocal = e && e.parameter && e.parameter.source === 'local';
-  
+
+  // 處理訂購頁面
+  if (action === 'order') {
+    if (useLocal) {
+      return HtmlService.createHtmlOutputFromFile('order');
+    }
+
+    const githubRawUrl = 'https://github.com/chyuanwei/ai-proj-dev/raw/dev/src/order.html';
+
+    try {
+      const response = UrlFetchApp.fetch(githubRawUrl);
+      const htmlContent = response.getContentText('UTF-8');
+      return HtmlService.createHtmlOutput(htmlContent);
+    } catch (error) {
+      try {
+        return HtmlService.createHtmlOutputFromFile('order');
+      } catch (fallbackError) {
+        return HtmlService.createHtmlOutput(
+          '<h1>錯誤</h1><p>無法載入訂購頁面：' + error.toString() + '</p>'
+        );
+      }
+    }
+  }
+
+  // 處理確認頁面
+  if (action === 'confirm') {
+    if (useLocal) {
+      return HtmlService.createHtmlOutputFromFile('confirm');
+    }
+
+    const githubRawUrl = 'https://github.com/chyuanwei/ai-proj-dev/raw/dev/src/confirm.html';
+
+    try {
+      const response = UrlFetchApp.fetch(githubRawUrl);
+      const htmlContent = response.getContentText('UTF-8');
+      return HtmlService.createHtmlOutput(htmlContent);
+    } catch (error) {
+      try {
+        return HtmlService.createHtmlOutputFromFile('confirm');
+      } catch (fallbackError) {
+        return HtmlService.createHtmlOutput(
+          '<h1>錯誤</h1><p>無法載入確認頁面：' + error.toString() + '</p>'
+        );
+      }
+    }
+  }
+
+  // 處理獲取訂購資訊
+  if (action === 'getOrder') {
+    const orderId = e.parameter.id;
+    if (!orderId) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, message: '缺少訂購編號' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    try {
+      const order = getOrderById(orderId);
+      if (order) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, order: order }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: '找不到訂購記錄' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    } catch (error) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, message: '獲取訂購資訊失敗：' + error.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // 預設頁面
   if (useLocal) {
-    // 直接使用 GAS 本地的 index.html（由 index.gas.html 推送而来）
     return HtmlService.createHtmlOutputFromFile('index');
   }
-  
-  // 默认行为：优先从 GitHub 获取，失败时使用本地作为备用
+
   const githubRawUrl = 'https://github.com/chyuanwei/ai-proj-dev/raw/dev/src/index.html';
-  
+
   try {
-    // 尝试从 GitHub 获取 HTML 内容
     const response = UrlFetchApp.fetch(githubRawUrl);
-    // 明确指定 UTF-8 编码以避免乱码
     const htmlContent = response.getContentText('UTF-8');
-    
-    // 返回 GitHub 上的 HTML 输出
     return HtmlService.createHtmlOutput(htmlContent);
   } catch (error) {
-    // 如果 GitHub 获取失败，使用 GAS 本地的 index.html 作为备用
     try {
       return HtmlService.createHtmlOutputFromFile('index');
     } catch (fallbackError) {
-      // 如果本地文件也失败，返回错误信息
       return HtmlService.createHtmlOutput(
-        '<h1>錯誤</h1><p>無法載入 HTML 檔案!：' + error.toString() + '</p>'
+        '<h1>錯誤</h1><p>無法載入 HTML 檔案：' + error.toString() + '</p>'
       );
     }
+  }
+}
+
+function doPost(e) {
+  const action = e.parameter.action || (e.postData ? JSON.parse(e.postData.contents).action : null);
+
+  // 處理訂購提交
+  if (action === 'submitOrder') {
+    try {
+      let data;
+      if (e.postData) {
+        data = JSON.parse(e.postData.contents);
+      } else {
+        // 處理表單數據
+        data = {
+          orderer: e.parameter.orderer,
+          products: []
+        };
+
+        const productNames = e.parameter['productName[]'];
+        const quantities = e.parameter['quantity[]'];
+
+        if (Array.isArray(productNames)) {
+          for (let i = 0; i < productNames.length; i++) {
+            data.products.push({
+              name: productNames[i],
+              quantity: quantities[i]
+            });
+          }
+        } else {
+          data.products.push({
+            name: productNames,
+            quantity: quantities
+          });
+        }
+      }
+
+      // 驗證數據
+      if (!data.orderer || !data.products || data.products.length === 0) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: '缺少必要欄位' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      // 生成訂購編號
+      const orderId = generateOrderId();
+
+      // 儲存到 Google Sheet
+      const result = saveOrderToSheet(orderId, data);
+
+      if (result.success) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, id: orderId, message: '訂購成功' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: result.message }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    } catch (error) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, message: '處理訂購時發生錯誤：' + error.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ success: false, message: '未知的操作' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// 生成訂購編號
+function generateOrderId() {
+  const timestamp = new Date().getTime();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return 'ORD-' + timestamp + '-' + random;
+}
+
+// 儲存訂購到 Google Sheet
+function saveOrderToSheet(orderId, data) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      return { success: false, message: '找不到工作表：' + SHEET_NAME };
+    }
+
+    // 如果是空工作表，添加標題行
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['訂購編號', '訂購人', '產品名稱', '數量', '訂購時間']);
+    }
+
+    const timestamp = new Date().toLocaleString('zh-TW');
+
+    // 為每個產品添加一行
+    data.products.forEach(product => {
+      sheet.appendRow([
+        orderId,
+        data.orderer,
+        product.name,
+        product.quantity,
+        timestamp
+      ]);
+    });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: '儲存到 Google Sheet 失敗：' + error.toString() };
+  }
+}
+
+// 根據訂購編號獲取訂購資訊
+function getOrderById(orderId) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      return null;
+    }
+
+    const data = sheet.getDataRange().getValues();
+
+    // 找到對應的訂購記錄
+    const orderRows = data.filter(row => row[0] === orderId);
+
+    if (orderRows.length === 0) {
+      return null;
+    }
+
+    const firstRow = orderRows[0];
+    const order = {
+      id: firstRow[0],
+      orderer: firstRow[1],
+      timestamp: firstRow[4],
+      products: orderRows.map(row => ({
+        name: row[2],
+        quantity: row[3]
+      }))
+    };
+
+    return order;
+  } catch (error) {
+    console.error('獲取訂購資訊失敗：', error);
+    return null;
   }
 }
