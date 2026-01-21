@@ -22,7 +22,8 @@ jobs:
 
       - name: Configure clasp credentials
         run: |
-          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+          echo '${{ secrets.CLASPRC_JSON }}' | base64 -d > ~/.clasprc.json
+          chmod 600 ~/.clasprc.json # 确保权限正确
           cat ~/.clasprc.json # for debugging, remove in production
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
