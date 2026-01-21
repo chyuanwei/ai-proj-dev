@@ -3,179 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>泉威食品 - 線上訂購單</title>
+    <title>泉威食品 - 線上訂購系統</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA">
-    
     <style>
-        :root {
-            --primary-color: #5d4037; /* 文青深棕色 */
-            --accent-color: #8d6e63;
-            --bg-color: #f5f5f5;
-        }
-
-        body {
-            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
-            background-color: var(--bg-color);
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 500px;
-            width: 100%;
-        }
-
-        h2 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 25px;
-            border-bottom: 2px solid var(--bg-color);
-            padding-bottom: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-
-        input[type="text"], 
-        input[type="tel"], 
-        select, 
-        textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box; /* 確保寬度包含內距 */
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background-color: var(--accent-color);
-        }
-
-        #status {
-            margin-top: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .loading { color: #f39c12; }
-        .success { color: #27ae60; }
-        .error { color: #e74c3c; }
+        :root { --primary: #5d4037; --bg: #f8f9fa; }
+        body { font-family: sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .card { background: white; max-width: 450px; margin: auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--primary); margin-top: 0; }
+        .field { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #ccc; }
+        #status { margin-top: 15px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="card">
     <h2>泉威食品 訂購單</h2>
-    
     <form id="orderForm">
-        <div class="form-group">
-            <label for="name">訂購人姓名</label>
-            <input type="text" id="name" name="name" required placeholder="請輸入姓名">
+        <div class="field">
+            <label>訂購人姓名</label>
+            <input type="text" id="orderer" required>
         </div>
-
-        <div class="form-group">
-            <label for="phone">聯絡電話</label>
-            <input type="tel" id="phone" name="phone" required placeholder="請輸入電話">
+        <div class="field">
+            <label>聯絡電話</label>
+            <input type="tel" id="phone" required>
         </div>
-
-        <div class="form-group">
-            <label for="product">選擇產品</label>
-            <select id="product" name="product">
+        <div class="field">
+            <label>選擇產品</label>
+            <select id="product">
                 <option value="招牌豆花">招牌豆花</option>
                 <option value="傳統布丁">傳統布丁</option>
                 <option value="限定產品">限定產品</option>
             </select>
         </div>
-
-        <div class="form-group">
-            <label for="note">備註說明</label>
-            <textarea id="note" name="note" rows="3" placeholder="如有特殊需求請註明"></textarea>
+        <div class="field">
+            <label>備註</label>
+            <textarea id="note" rows="2"></textarea>
         </div>
-
-        <button type="submit" id="submitBtn">送出訂購單</button>
+        <button type="submit" id="submitBtn">確認送出</button>
     </form>
-
     <div id="status"></div>
 </div>
 
 <script>
-    // ⚠️ 確保這裡是 /exec 結尾的正式網址
+    // ⚠️ 請確保這是你最新的 /exec 網址
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzJPcsBSfJPp4mEtBYqaCu0JeQn3IrCCCGLwyKm8sn_18G0GBXbRQONK0igj2w5Qdrtng/exec";
 
     document.getElementById('orderForm').addEventListener('submit', function(e) {
         e.preventDefault();
-
         const btn = document.getElementById('submitBtn');
         const status = document.getElementById('status');
         
-        // 變更 UI 狀態
         btn.disabled = true;
-        status.innerHTML = "傳送中...";
-        status.className = "loading";
+        status.innerText = "正在傳送訂單...";
 
-        // 收集資料
-        const formData = {
-            name: document.getElementById('name').value,
-            phone: document.getElementById('phone').value,
-            product: document.getElementById('product').value,
-            note: document.getElementById('note').value,
-            timestamp: new Date().toLocaleString()
+        // 構建符合後端期待的 JSON 結構
+        const payload = {
+            action: "submitOrder",
+            orderer: document.getElementById('orderer').value,
+            phone: document.getElementById('phone').value, // 擴充欄位
+            products: [
+                {
+                    name: document.getElementById('product').value,
+                    quantity: 1
+                }
+            ],
+            note: document.getElementById('note').value
         };
 
-        /* 解決 CORS 的關鍵：
-           1. 使用 mode: 'no-cors'，瀏覽器就不會進行 Preflight 檢查。
-           2. Content-Type 使用 text/plain 避免觸發 OPTIONS 請求。
-        */
-        fetch(GAS_URL + "?action=submitOrder", {
-            method: "POST",
-            mode: "no-cors", 
-            headers: {
-                "Content-Type": "text/plain"
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => {
-            // 注意：no-cors 模式下無法讀取 response 內容，只要沒噴 error 就視為成功
-            status.innerHTML = "✓ 訂購單已成功送出！";
-            status.className = "success";
-            document.getElementById('orderForm').reset();
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            status.innerHTML = "❌ 傳送失敗，請稍後再試";
-            status.className = "error";
-        })
-        .finally(() => {
-            btn.disabled = false;
-        });
-    });
-</script>
-
-</body>
-</html>
+        fetch(`${GAS_URL}?action=submitOrder`, {
+            method: 'POST',
+            mode: 'no-cors', // 避開預檢請求
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
