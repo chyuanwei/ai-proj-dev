@@ -1,34 +1,38 @@
-name: Deploy to Google Apps Script
+name: Deploy to GAS
 
 on:
   push:
-    branches: [ dev ]
-  workflow_dispatch:
+    branches:
+      - main
+      - dev
 
 jobs:
-  deploy-gas:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install clasp
-      run: npm install -g @google/clasp
+      - name: Install clasp
+        run: npm install -g @google/clasp
 
-    - name: Create clasp credentials
-      run: |
-        echo '${{ secrets.GAS_CREDENTIALS }}' > ~/.clasprc.json
-      env:
-        GAS_CREDENTIALS: ${{ secrets.GAS_CREDENTIALS }}
+      - name: Create clasprc.json
+        env:
+          # 使用環境變數傳遞，絕對不要在 run 裡面用 ${{ }}
+          CLASPRC_JSON_RAW: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          # 建立家目錄並寫入檔案
+          mkdir -p ~/.clasprc.json
+          echo "$CLASPRC_JSON_RAW" > ~/.clasprc.json
+          chmod 600 ~/.clasprc.json
 
-    - name: Deploy to GAS
-      run: clasp push --force
-
-    - name: Log deployment status
-      run: echo "✅ GAS deployment completed"
+      - name: Deploy to GAS
+        run: |
+          # 強制覆蓋 push 到 GAS 平台
+          clasp push -f
