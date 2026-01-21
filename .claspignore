@@ -1,4 +1,8 @@
-# 忽略 GitHub ?�本??HTML ?�件，只?��?GAS ?�本??.gas.html ?�件
-src/index.html
-src/order.html
-src/confirm.html
+# 忽略所有 HTML 文件，因为它们应从 GitHub 加载
+src/**/*.html
+
+# 忽略其他不应推送到 GAS 的文件
+node_modules/
+.clasp.json
+push-to-gas.ps1
+update-gas.ps1
